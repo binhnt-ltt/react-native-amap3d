@@ -92,6 +92,14 @@ RCT_EXPORT_METHOD(animateTo:(nonnull NSNumber *)reactTag params:(NSDictionary *)
 }
 
 - (void)mapView:(AMapView *)mapView didUpdateUserLocation:(MAUserLocation *)userLocation updatingLocation:(BOOL)updatingLocation {
+    if (!updatingLocation)
+    {
+        MAAnnotationView *userLocationView = [mapView viewForAnnotation:mapView.userLocation];
+        [UIView animateWithDuration:0.1 animations:^{
+            double degree = userLocation.heading.trueHeading - mapView.rotationDegree;
+            userLocationView.imageView.transform = CGAffineTransformMakeRotation(degree * M_PI / 180.f );
+        }];
+    }
     if (mapView.onLocation) {
         mapView.onLocation(@{
                 @"latitude": @(userLocation.coordinate.latitude),
