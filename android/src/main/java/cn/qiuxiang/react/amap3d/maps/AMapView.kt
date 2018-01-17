@@ -1,6 +1,12 @@
 package cn.qiuxiang.react.amap3d.maps
 
 import android.content.Context
+import android.content.Context.LOCATION_SERVICE
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import android.os.Bundle
+import android.util.Log
 import android.view.View
 import com.amap.api.maps.AMap
 import com.amap.api.maps.CameraUpdateFactory
@@ -23,8 +29,36 @@ class AMapView(context: Context) : TextureMapView(context) {
         locationStyle
     }
 
+    private var locationManager : LocationManager? = null
+
+    //define the listener
+    private val locationListener: LocationListener = object : LocationListener {
+        override fun onLocationChanged(location: Location) {
+            val event = Arguments.createMap()
+            event.putDouble("latitude", location.latitude)
+            event.putDouble("longitude", location.longitude)
+            event.putDouble("accuracy", location.accuracy.toDouble())
+            event.putDouble("altitude", location.altitude)
+            event.putDouble("speed", location.speed.toDouble())
+            event.putInt("timestamp", location.time.toInt())
+            emit(id, "onLocation", event)
+        }
+        override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
+        override fun onProviderEnabled(provider: String) {}
+        override fun onProviderDisabled(provider: String) {}
+    }
+
     init {
         super.onCreate(null)
+
+        locationManager = context.getSystemService(LOCATION_SERVICE) as LocationManager?
+
+        try {
+            // Request location updates
+            locationManager?.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 10000L, 10f, locationListener);
+        } catch(ex: SecurityException) {
+            Log.d("myTag", "Security Exception, no location available");
+        }
 
         map.setOnMapClickListener { latLng ->
             for (marker in markers.values) {
@@ -44,16 +78,16 @@ class AMapView(context: Context) : TextureMapView(context) {
             emit(id, "onLongPress", event)
         }
 
-        map.setOnMyLocationChangeListener { location ->
-            val event = Arguments.createMap()
-            event.putDouble("latitude", location.latitude)
-            event.putDouble("longitude", location.longitude)
-            event.putDouble("accuracy", location.accuracy.toDouble())
-            event.putDouble("altitude", location.altitude)
-            event.putDouble("speed", location.speed.toDouble())
-            event.putInt("timestamp", location.time.toInt())
-            emit(id, "onLocation", event)
-        }
+//        map.setOnMyLocationChangeListener { location ->
+//            val event = Arguments.createMap()
+//            event.putDouble("latitude", location.latitude)
+//            event.putDouble("longitude", location.longitude)
+//            event.putDouble("accuracy", location.accuracy.toDouble())
+//            event.putDouble("altitude", location.altitude)
+//            event.putDouble("speed", location.speed.toDouble())
+//            event.putInt("timestamp", location.time.toInt())
+//            emit(id, "onLocation", event)
+//        }
 
         map.setOnMarkerClickListener { marker ->
             emit(markers[marker.id]?.id, "onPress")
@@ -238,7 +272,7 @@ class AMapView(context: Context) : TextureMapView(context) {
 
         if (style.hasKey("image")) {
             val drawable = context.resources.getIdentifier(
-                style.getString("image"), "drawable", context.packageName)
+                    style.getString("image"), "drawable", context.packageName)
             locationStyle.myLocationIcon(BitmapDescriptorFactory.fromResource(drawable))
         }
     }
