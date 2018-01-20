@@ -87,6 +87,13 @@ RCT_EXPORT_METHOD(setMapRotate:(nonnull NSNumber *)reactTag isMapRotate:(BOOL)is
                 @"longitude": @(coordinate.longitude),
         });
     }
+    
+    if (_isMapRotate) {
+        _isMapRotate = NO;
+        if (mapView.onChangeMapRotate) {
+            mapView.onChangeMapRotate(@{@"isMapRotate" : @(_isMapRotate)});
+        }
+    }
 }
 
 - (void)mapView:(AMapView *)mapView didLongPressedAtCoordinate:(CLLocationCoordinate2D)coordinate {
@@ -99,16 +106,20 @@ RCT_EXPORT_METHOD(setMapRotate:(nonnull NSNumber *)reactTag isMapRotate:(BOOL)is
 }
 
 - (void)mapView:(AMapView *)mapView mapWillMoveByUser:(BOOL)wasUserAction {
-    _isMapRotate = NO;
-    if (mapView.onChangeMapRotate) {
-        mapView.onChangeMapRotate(@{@"isMapRotate" : @(_isMapRotate)});
+    if (_isMapRotate) {
+        _isMapRotate = NO;
+        if (mapView.onChangeMapRotate) {
+            mapView.onChangeMapRotate(@{@"isMapRotate" : @(_isMapRotate)});
+        }
     }
 }
 
 - (void)mapView:(AMapView *)mapView mapWillZoomByUser:(BOOL)wasUserAction {
-    _isMapRotate = NO;
-    if (mapView.onChangeMapRotate) {
-        mapView.onChangeMapRotate(@{@"isMapRotate" : @(_isMapRotate)});
+    if (_isMapRotate) {
+        _isMapRotate = NO;
+        if (mapView.onChangeMapRotate) {
+            mapView.onChangeMapRotate(@{@"isMapRotate" : @(_isMapRotate)});
+        }
     }
 }
 
@@ -116,7 +127,8 @@ RCT_EXPORT_METHOD(setMapRotate:(nonnull NSNumber *)reactTag isMapRotate:(BOOL)is
     if (_isMapRotate) {
         float heading = userLocation.heading.magneticHeading; //in degrees
         mapView.rotationDegree = heading;
-        mapView.cameraDegree = 30.0;
+        mapView.cameraDegree = 54.0;
+        mapView.customUserPositionMarker.annotationView.transform = CGAffineTransformMakeRotation(0.f);
     }
     
     if (mapView.onLocation) {
@@ -130,7 +142,7 @@ RCT_EXPORT_METHOD(setMapRotate:(nonnull NSNumber *)reactTag isMapRotate:(BOOL)is
         });
     }
     
-    if (!updatingLocation)
+    if (!updatingLocation && !_isMapRotate)
     {
         [UIView animateWithDuration:0.1 animations:^{
             double degree = userLocation.heading.trueHeading - mapView.rotationDegree;
@@ -162,6 +174,13 @@ RCT_EXPORT_METHOD(setMapRotate:(nonnull NSNumber *)reactTag isMapRotate:(BOOL)is
     AMapMarker *marker = [mapView getMarker:view.annotation];
     if (marker.onPress) {
         marker.onPress(nil);
+    }
+    
+    if (_isMapRotate) {
+        _isMapRotate = NO;
+        if (mapView.onChangeMapRotate) {
+            mapView.onChangeMapRotate(@{@"isMapRotate" : @(_isMapRotate)});
+        }
     }
 }
 
