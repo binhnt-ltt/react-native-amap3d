@@ -1,6 +1,13 @@
 package cn.qiuxiang.react.amap3d.maps
 
 import android.content.Context
+import android.content.Context.LOCATION_SERVICE
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import android.os.Bundle
+import android.util.Log
+import android.view.MotionEvent
 import android.view.View
 import com.amap.api.maps.AMap
 import com.amap.api.maps.CameraUpdateFactory
@@ -20,11 +27,42 @@ class AMapView(context: Context) : TextureMapView(context) {
     private val locationStyle by lazy {
         val locationStyle = MyLocationStyle()
         locationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE_NO_CENTER)
+//        locationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_MAP_ROTATE)
         locationStyle
+    }
+
+    private var _isMapRotate: Boolean = false
+
+    private var locationManager : LocationManager? = null
+
+    //define the listener
+    private val locationListener: LocationListener = object : LocationListener {
+        override fun onLocationChanged(location: Location) {
+            val event = Arguments.createMap()
+            event.putDouble("latitude", location.latitude)
+            event.putDouble("longitude", location.longitude)
+            event.putDouble("accuracy", location.accuracy.toDouble())
+            event.putDouble("altitude", location.altitude)
+            event.putDouble("speed", location.speed.toDouble())
+            event.putInt("timestamp", location.time.toInt())
+            emit(id, "onLocation", event)
+        }
+        override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
+        override fun onProviderEnabled(provider: String) {}
+        override fun onProviderDisabled(provider: String) {}
     }
 
     init {
         super.onCreate(null)
+
+        locationManager = context.getSystemService(LOCATION_SERVICE) as LocationManager?
+
+        try {
+            // Request location updates
+            locationManager?.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0L, 0f, locationListener);
+        } catch(ex: SecurityException) {
+            Log.d("myTag", "Security Exception, no location available");
+        }
 
         map.setOnMapClickListener { latLng ->
             for (marker in markers.values) {
@@ -35,28 +73,37 @@ class AMapView(context: Context) : TextureMapView(context) {
             event.putDouble("latitude", latLng.latitude)
             event.putDouble("longitude", latLng.longitude)
             emit(id, "onPress", event)
+
+//            emitMapRotate("onChangeMapRotate", false)
         }
 
-        map.setOnMapLongClickListener { latLng ->
-            val event = Arguments.createMap()
-            event.putDouble("latitude", latLng.latitude)
-            event.putDouble("longitude", latLng.longitude)
-            emit(id, "onLongPress", event)
-        }
+//        map.setOnMapLongClickListener { latLng ->
+//            val event = Arguments.createMap()
+//            event.putDouble("latitude", latLng.latitude)
+//            event.putDouble("longitude", latLng.longitude)
+//            emit(id, "onLongPress", event)
+//
+////            emitMapRotate("onChangeMapRotate", false)
+//        }
 
-        map.setOnMyLocationChangeListener { location ->
-            val event = Arguments.createMap()
-            event.putDouble("latitude", location.latitude)
-            event.putDouble("longitude", location.longitude)
-            event.putDouble("accuracy", location.accuracy.toDouble())
-            event.putDouble("altitude", location.altitude)
-            event.putDouble("speed", location.speed.toDouble())
-            event.putInt("timestamp", location.time.toInt())
-            emit(id, "onLocation", event)
-        }
+//        map.setOnMyLocationChangeListener { location ->
+//            val event = Arguments.createMap()
+//            event.putDouble("latitude", location.latitude)
+//            event.putDouble("longitude", location.longitude)
+//            event.putDouble("accuracy", location.accuracy.toDouble())
+//            event.putDouble("altitude", location.altitude)
+//            event.putDouble("speed", location.speed.toDouble())
+//            event.putInt("timestamp", location.time.toInt())
+//            emit(id, "onLocation", event)
+//        }
 
         map.setOnMarkerClickListener { marker ->
+            Log.d("duypx = ", "maker")
             emit(markers[marker.id]?.id, "onPress")
+            if (_isMapRotate) {
+                _isMapRotate = false
+                emitMapRotate("onChangeMapRotate", false)
+            }
             false
         }
 
@@ -80,10 +127,12 @@ class AMapView(context: Context) : TextureMapView(context) {
 
         map.setOnCameraChangeListener(object : AMap.OnCameraChangeListener {
             override fun onCameraChangeFinish(position: CameraPosition?) {
+//                Log.d("duypx = ", position.toString())
                 emitCameraChangeEvent("onStatusChangeComplete", position)
             }
 
             override fun onCameraChange(position: CameraPosition?) {
+//                Log.d("duypx : ", position.toString())
                 emitCameraChangeEvent("onStatusChange", position)
             }
         })
@@ -104,7 +153,38 @@ class AMapView(context: Context) : TextureMapView(context) {
             false
         }
 
+        map.setOnMapTouchListener {
+            if (_isMapRotate) {
+                _isMapRotate = false
+                emitMapRotate("onChangeMapRotate", false)
+            }
+        }
+
         map.setInfoWindowAdapter(AMapInfoWindowAdapter(context, markers))
+    }
+
+    fun emitMapRotate(event: String, isMapRotate: Boolean) {
+        val locationStyle1 by lazy {
+            val locationStyle1 = MyLocationStyle()
+            if (isMapRotate) {
+                locationStyle1.myLocationType(MyLocationStyle.LOCATION_TYPE_MAP_ROTATE)
+            } else {
+                locationStyle1.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE_NO_CENTER)
+            }
+            locationStyle1
+        }
+
+        map.myLocationStyle = locationStyle1
+
+//        if (isMapRotate) {
+//            map.myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_MAP_ROTATE)
+//        } else {
+//            map.myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE_NO_CENTER)
+//        }
+
+        val data = Arguments.createMap()
+        data.putBoolean("isMapRotate", isMapRotate)
+        emit(id, event, data)
     }
 
     fun emitCameraChangeEvent(event: String, position: CameraPosition?) {
@@ -195,6 +275,30 @@ class AMapView(context: Context) : TextureMapView(context) {
         map.animateCamera(cameraUpdate, duration.toLong(), animateCallback)
     }
 
+    fun setMapRotate(args: ReadableArray?) {
+        val isMapRotate = args?.getBoolean(0)!!
+        _isMapRotate = isMapRotate
+
+//        Log.d("duypx", isMapRotate.toString())
+
+        val locationStyle1 by lazy {
+            val locationStyle1 = MyLocationStyle()
+            if (isMapRotate) {
+                locationStyle1.myLocationType(MyLocationStyle.LOCATION_TYPE_MAP_ROTATE)
+            } else {
+                locationStyle1.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE_NO_CENTER)
+            }
+            locationStyle1
+        }
+
+        map.myLocationStyle = locationStyle1
+//        if (isMapRotate) {
+//            map.myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_MAP_ROTATE)
+//        } else {
+//            map.myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE_NO_CENTER)
+//        }
+    }
+
     fun setRegion(region: ReadableMap) {
         map.moveCamera(CameraUpdateFactory.newLatLngBounds(latLngBoundsFromReadableMap(region), 0))
     }
@@ -242,8 +346,8 @@ class AMapView(context: Context) : TextureMapView(context) {
             locationStyle.myLocationIcon(BitmapDescriptorFactory.fromResource(drawable))
         }
 
-        if (style.hasKey("isHiddenUserLocation")) {
-            locationStyle.showMyLocation(!style.getBoolean("isHiddenUserLocation"))
-        }
+//        if (style.hasKey("isHiddenUserLocation")) {
+//            locationStyle.showMyLocation(!style.getBoolean("isHiddenUserLocation"))
+//        }
     }
 }

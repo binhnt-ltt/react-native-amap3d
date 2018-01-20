@@ -1,5 +1,6 @@
 package cn.qiuxiang.react.amap3d.maps
 
+import android.util.Log
 import android.view.View
 import com.amap.api.maps.AMap
 import com.amap.api.maps.CameraUpdateFactory
@@ -15,6 +16,7 @@ import com.facebook.react.uimanager.annotations.ReactProp
 internal class AMapViewManager : ViewGroupManager<AMapView>() {
     companion object {
         val ANIMATE_TO = 1
+        val MAP_ROTATE = 2
     }
 
     override fun getName(): String {
@@ -31,12 +33,16 @@ internal class AMapViewManager : ViewGroupManager<AMapView>() {
     }
 
     override fun getCommandsMap(): Map<String, Int> {
-        return mapOf("animateTo" to ANIMATE_TO)
+        return mapOf(
+                "animateTo" to ANIMATE_TO,
+                "setMapRotate" to MAP_ROTATE
+        )
     }
 
     override fun receiveCommand(overlay: AMapView, commandId: Int, args: ReadableArray?) {
         when (commandId) {
             ANIMATE_TO -> overlay.animateTo(args)
+            MAP_ROTATE -> overlay.setMapRotate(args)
         }
     }
 
@@ -53,12 +59,14 @@ internal class AMapViewManager : ViewGroupManager<AMapView>() {
     override fun getExportedCustomDirectEventTypeConstants(): Map<String, Any> {
         return MapBuilder.of(
                 "onPress", MapBuilder.of("registrationName", "onPress"),
-                "onLongPress", MapBuilder.of("registrationName", "onLongPress"),
+//                "onLongPress", MapBuilder.of("registrationName", "onLongPress"),
+                "onChangeMapRotate", MapBuilder.of("registrationName", "onChangeMapRotate"),
                 "onAnimateCancel", MapBuilder.of("registrationName", "onAnimateCancel"),
                 "onAnimateFinish", MapBuilder.of("registrationName", "onAnimateFinish"),
                 "onStatusChange", MapBuilder.of("registrationName", "onStatusChange"),
                 "onStatusChangeComplete", MapBuilder.of("registrationName", "onStatusChangeComplete"),
                 "onLocation", MapBuilder.of("registrationName", "onLocation")
+//                "onChangeMapRotate", MapBuilder.of("registrationName", "onChangeMapRotate")
         )
     }
 
