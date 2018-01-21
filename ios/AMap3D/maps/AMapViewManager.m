@@ -127,7 +127,6 @@ RCT_EXPORT_METHOD(setMapRotate:(nonnull NSNumber *)reactTag isMapRotate:(BOOL)is
     if (_isMapRotate) {
         float heading = userLocation.heading.magneticHeading; //in degrees
         mapView.rotationDegree = heading;
-        mapView.cameraDegree = 54.0;
         mapView.customUserPositionMarker.annotationView.transform = CGAffineTransformMakeRotation(0.f);
     }
     
