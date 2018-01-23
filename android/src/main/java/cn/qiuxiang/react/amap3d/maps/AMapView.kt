@@ -27,7 +27,6 @@ class AMapView(context: Context) : TextureMapView(context) {
     private val locationStyle by lazy {
         val locationStyle = MyLocationStyle()
         locationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE_NO_CENTER)
-//        locationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_MAP_ROTATE)
         locationStyle
     }
 
@@ -127,12 +126,10 @@ class AMapView(context: Context) : TextureMapView(context) {
 
         map.setOnCameraChangeListener(object : AMap.OnCameraChangeListener {
             override fun onCameraChangeFinish(position: CameraPosition?) {
-//                Log.d("duypx = ", position.toString())
                 emitCameraChangeEvent("onStatusChangeComplete", position)
             }
 
             override fun onCameraChange(position: CameraPosition?) {
-//                Log.d("duypx : ", position.toString())
                 emitCameraChangeEvent("onStatusChange", position)
             }
         })
@@ -165,7 +162,7 @@ class AMapView(context: Context) : TextureMapView(context) {
 
     fun emitMapRotate(event: String, isMapRotate: Boolean) {
         val locationStyle1 by lazy {
-            val locationStyle1 = MyLocationStyle()
+            val locationStyle1 = map.myLocationStyle
             if (isMapRotate) {
                 locationStyle1.myLocationType(MyLocationStyle.LOCATION_TYPE_MAP_ROTATE)
             } else {
@@ -175,12 +172,6 @@ class AMapView(context: Context) : TextureMapView(context) {
         }
 
         map.myLocationStyle = locationStyle1
-
-//        if (isMapRotate) {
-//            map.myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_MAP_ROTATE)
-//        } else {
-//            map.myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE_NO_CENTER)
-//        }
 
         val data = Arguments.createMap()
         data.putBoolean("isMapRotate", isMapRotate)
@@ -279,10 +270,8 @@ class AMapView(context: Context) : TextureMapView(context) {
         val isMapRotate = args?.getBoolean(0)!!
         _isMapRotate = isMapRotate
 
-//        Log.d("duypx", isMapRotate.toString())
-
         val locationStyle1 by lazy {
-            val locationStyle1 = MyLocationStyle()
+            val locationStyle1 = map.myLocationStyle
             if (isMapRotate) {
                 locationStyle1.myLocationType(MyLocationStyle.LOCATION_TYPE_MAP_ROTATE)
             } else {
@@ -292,11 +281,6 @@ class AMapView(context: Context) : TextureMapView(context) {
         }
 
         map.myLocationStyle = locationStyle1
-//        if (isMapRotate) {
-//            map.myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_MAP_ROTATE)
-//        } else {
-//            map.myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE_NO_CENTER)
-//        }
     }
 
     fun setRegion(region: ReadableMap) {
@@ -342,12 +326,20 @@ class AMapView(context: Context) : TextureMapView(context) {
 
         if (style.hasKey("image")) {
             val drawable = context.resources.getIdentifier(
-                style.getString("image"), "drawable", context.packageName)
+                    style.getString("image"), "drawable", context.packageName)
             locationStyle.myLocationIcon(BitmapDescriptorFactory.fromResource(drawable))
         }
 
-//        if (style.hasKey("isHiddenUserLocation")) {
-//            locationStyle.showMyLocation(!style.getBoolean("isHiddenUserLocation"))
-//        }
+        if (style.hasKey("isHiddenUserLocation")) {
+            val isHiddenUserLocation = style.getBoolean("isHiddenUserLocation")
+            if (isHiddenUserLocation) {
+                locationStyle.radiusFillColor(0)
+                locationStyle.strokeColor(0)
+                locationStyle.strokeWidth(0f)
+                val drawable = context.resources.getIdentifier(
+                        "blank", "drawable", context.packageName)
+                locationStyle.myLocationIcon(BitmapDescriptorFactory.fromResource(drawable))
+            }
+        }
     }
 }
