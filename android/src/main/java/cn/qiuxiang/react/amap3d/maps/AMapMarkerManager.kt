@@ -126,4 +126,9 @@ internal class AMapMarkerManager : ViewGroupManager<AMapMarker>() {
                 coordinate.getDouble("x"),
                 coordinate.getDouble("y"))
     }
+
+    @ReactProp(name = "rotationAngle")
+    fun setRotationAngle(marker: AMapMarker, rotationAngle: Float) {
+        marker.rotationAngle = 360 - rotationAngle
+    }
 }

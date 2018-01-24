@@ -99,6 +99,12 @@ class AMapMarker(context: Context) : ReactViewGroup(context), AMapOverlay {
             }
         }
 
+    var rotationAngle: Float = 0.0f
+        set(value) {
+            field = value
+            marker?.setRotateAngle(value)
+        }
+
     override fun addView(child: View, index: Int) {
         super.addView(child, index)
         icon = child
@@ -117,6 +123,8 @@ class AMapMarker(context: Context) : ReactViewGroup(context), AMapOverlay {
                 .title(title)
                 .snippet(snippet)
                 .zIndex(zIndex))
+
+        marker?.setRotateAngle(rotationAngle)
 
         this.clickDisabled = clickDisabled
         this.active = active

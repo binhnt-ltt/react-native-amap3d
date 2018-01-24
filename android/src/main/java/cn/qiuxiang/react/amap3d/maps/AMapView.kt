@@ -97,7 +97,6 @@ class AMapView(context: Context) : TextureMapView(context) {
 //        }
 
         map.setOnMarkerClickListener { marker ->
-            Log.d("duypx = ", "maker")
             emit(markers[marker.id]?.id, "onPress")
             if (_isMapRotate) {
                 _isMapRotate = false

@@ -146,6 +146,11 @@ export default class Marker extends Component<any> {
      * 注意，对于自定义信息窗体，该事件是无效的
      */
     onInfoWindowPress: PropTypes.func,
+
+    /**
+     * rotationAngle - android only
+     */
+    rotationAngle: PropTypes.number,
   }
 
   componentDidMount() {
