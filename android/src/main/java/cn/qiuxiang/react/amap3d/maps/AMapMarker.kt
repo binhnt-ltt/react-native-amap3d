@@ -105,6 +105,8 @@ class AMapMarker(context: Context) : ReactViewGroup(context), AMapOverlay {
             marker?.setRotateAngle(value)
         }
 
+    var isCustomUserPosition: Boolean = false
+
     override fun addView(child: View, index: Int) {
         super.addView(child, index)
         icon = child
@@ -128,6 +130,7 @@ class AMapMarker(context: Context) : ReactViewGroup(context), AMapOverlay {
 
         this.clickDisabled = clickDisabled
         this.active = active
+        this.isCustomUserPosition = isCustomUserPosition
     }
 
     override fun remove() {

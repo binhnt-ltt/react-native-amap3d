@@ -129,6 +129,11 @@ internal class AMapMarkerManager : ViewGroupManager<AMapMarker>() {
 
     @ReactProp(name = "rotationAngle")
     fun setRotationAngle(marker: AMapMarker, rotationAngle: Float) {
-        marker.rotationAngle = 360 - rotationAngle
+        marker.rotationAngle = rotationAngle
+    }
+
+    @ReactProp(name = "isCustomUserPosition")
+    fun setIsCustomUserPosition(marker: AMapMarker, isCustomUserPosition: Boolean) {
+        marker.isCustomUserPosition = isCustomUserPosition
     }
 }

@@ -2,6 +2,8 @@ package cn.qiuxiang.react.amap3d.maps
 
 import android.content.Context
 import android.content.Context.LOCATION_SERVICE
+import android.content.Context.SENSOR_SERVICE
+import android.hardware.*
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -19,6 +21,15 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.events.RCTEventEmitter
+import android.R.attr.orientation
+import android.hardware.SensorManager.getRotationMatrix
+import android.hardware.Sensor.TYPE_MAGNETIC_FIELD
+import android.hardware.Sensor.TYPE_ACCELEROMETER
+import android.hardware.Sensor.TYPE_GRAVITY
+import android.R.attr.orientation
+import android.hardware.SensorManager.getRotationMatrix
+import android.hardware.Sensor.TYPE_MAGNETIC_FIELD
+import android.hardware.Sensor.TYPE_ACCELEROMETER
 
 class AMapView(context: Context) : TextureMapView(context) {
     private val eventEmitter: RCTEventEmitter = (context as ThemedReactContext).getJSModule(RCTEventEmitter::class.java)
@@ -33,6 +44,11 @@ class AMapView(context: Context) : TextureMapView(context) {
     private var _isMapRotate: Boolean = false
 
     private var locationManager : LocationManager? = null
+    private var mSensorManager : SensorManager? = null
+    private var mAccelerometer: Sensor? = null
+    private var mMagnetometer: Sensor? = null
+    private var mAzimuth = 0 // degree
+    private var customUserPositionMarker: AMapMarker? = null
 
     //define the listener
     private val locationListener: LocationListener = object : LocationListener {
@@ -51,6 +67,30 @@ class AMapView(context: Context) : TextureMapView(context) {
         override fun onProviderDisabled(provider: String) {}
     }
 
+    private val mSensorEventListener: SensorEventListener = object : SensorEventListener {
+        var gData = FloatArray(3) // accelerometer
+        var mData = FloatArray(3) // magnetometer
+        var rMat = FloatArray(9)
+        var iMat = FloatArray(9)
+        var orientation = FloatArray(3)
+
+        override fun onSensorChanged(event: SensorEvent) {
+            val data: FloatArray
+            when (event.sensor.type) {
+                Sensor.TYPE_ACCELEROMETER -> gData = event.values.clone()
+                Sensor.TYPE_MAGNETIC_FIELD -> mData = event.values.clone()
+                else -> return
+            }
+
+            if (SensorManager.getRotationMatrix(rMat, iMat, gData, mData)) {
+                mAzimuth = (Math.toDegrees(SensorManager.getOrientation(rMat, orientation)[0].toDouble()) + 360).toInt() % 360
+                customUserPositionMarker?.marker?.setRotateAngle(-mAzimuth.toFloat())
+            }
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+    }
+
     init {
         super.onCreate(null)
 
@@ -62,6 +102,14 @@ class AMapView(context: Context) : TextureMapView(context) {
         } catch(ex: SecurityException) {
             Log.d("myTag", "Security Exception, no location available");
         }
+
+        mSensorManager = context.getSystemService(SENSOR_SERVICE) as SensorManager?
+
+        mAccelerometer = mSensorManager?.getDefaultSensor( Sensor.TYPE_ACCELEROMETER );
+        mSensorManager?.registerListener( mSensorEventListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME );
+
+        mMagnetometer = this.mSensorManager?.getDefaultSensor( Sensor.TYPE_MAGNETIC_FIELD );
+        mSensorManager?.registerListener( mSensorEventListener, mMagnetometer, SensorManager.SENSOR_DELAY_GAME );
 
         map.setOnMapClickListener { latLng ->
             for (marker in markers.values) {
@@ -203,6 +251,9 @@ class AMapView(context: Context) : TextureMapView(context) {
         if (child is AMapOverlay) {
             child.add(map)
             if (child is AMapMarker) {
+                if (child.isCustomUserPosition) {
+                    customUserPositionMarker = child
+                }
                 markers.put(child.marker?.id!!, child)
             }
             if (child is AMapPolyline) {
