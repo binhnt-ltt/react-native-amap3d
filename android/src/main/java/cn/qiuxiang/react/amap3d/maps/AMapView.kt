@@ -1,15 +1,11 @@
 package cn.qiuxiang.react.amap3d.maps
 
 import android.content.Context
-import android.content.Context.LOCATION_SERVICE
 import android.content.Context.SENSOR_SERVICE
-import android.hardware.*
-import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
-import android.os.Bundle
-import android.util.Log
-import android.view.MotionEvent
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.view.View
 import com.amap.api.maps.AMap
 import com.amap.api.maps.CameraUpdateFactory
@@ -21,15 +17,6 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.events.RCTEventEmitter
-import android.R.attr.orientation
-import android.hardware.SensorManager.getRotationMatrix
-import android.hardware.Sensor.TYPE_MAGNETIC_FIELD
-import android.hardware.Sensor.TYPE_ACCELEROMETER
-import android.hardware.Sensor.TYPE_GRAVITY
-import android.R.attr.orientation
-import android.hardware.SensorManager.getRotationMatrix
-import android.hardware.Sensor.TYPE_MAGNETIC_FIELD
-import android.hardware.Sensor.TYPE_ACCELEROMETER
 
 class AMapView(context: Context) : TextureMapView(context) {
     private val eventEmitter: RCTEventEmitter = (context as ThemedReactContext).getJSModule(RCTEventEmitter::class.java)
@@ -43,29 +30,11 @@ class AMapView(context: Context) : TextureMapView(context) {
 
     private var _isMapRotate: Boolean = false
 
-    private var locationManager : LocationManager? = null
     private var mSensorManager : SensorManager? = null
     private var mAccelerometer: Sensor? = null
     private var mMagnetometer: Sensor? = null
     private var mAzimuth = 0 // degree
     private var customUserPositionMarker: AMapMarker? = null
-
-    //define the listener
-    private val locationListener: LocationListener = object : LocationListener {
-        override fun onLocationChanged(location: Location) {
-            val event = Arguments.createMap()
-            event.putDouble("latitude", location.latitude)
-            event.putDouble("longitude", location.longitude)
-            event.putDouble("accuracy", location.accuracy.toDouble())
-            event.putDouble("altitude", location.altitude)
-            event.putDouble("speed", location.speed.toDouble())
-            event.putInt("timestamp", location.time.toInt())
-            emit(id, "onLocation", event)
-        }
-        override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
-        override fun onProviderEnabled(provider: String) {}
-        override fun onProviderDisabled(provider: String) {}
-    }
 
     private val mSensorEventListener: SensorEventListener = object : SensorEventListener {
         var gData = FloatArray(3) // accelerometer
@@ -75,7 +44,6 @@ class AMapView(context: Context) : TextureMapView(context) {
         var orientation = FloatArray(3)
 
         override fun onSensorChanged(event: SensorEvent) {
-            val data: FloatArray
             when (event.sensor.type) {
                 Sensor.TYPE_ACCELEROMETER -> gData = event.values.clone()
                 Sensor.TYPE_MAGNETIC_FIELD -> mData = event.values.clone()
@@ -97,15 +65,6 @@ class AMapView(context: Context) : TextureMapView(context) {
 
     init {
         super.onCreate(null)
-
-        locationManager = context.getSystemService(LOCATION_SERVICE) as LocationManager?
-
-        try {
-            // Request location updates
-            locationManager?.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0L, 0f, locationListener);
-        } catch(ex: SecurityException) {
-            Log.d("myTag", "Security Exception, no location available");
-        }
 
         mSensorManager = context.getSystemService(SENSOR_SERVICE) as SensorManager?
 
@@ -137,16 +96,16 @@ class AMapView(context: Context) : TextureMapView(context) {
 ////            emitMapRotate("onChangeMapRotate", false)
 //        }
 
-//        map.setOnMyLocationChangeListener { location ->
-//            val event = Arguments.createMap()
-//            event.putDouble("latitude", location.latitude)
-//            event.putDouble("longitude", location.longitude)
-//            event.putDouble("accuracy", location.accuracy.toDouble())
-//            event.putDouble("altitude", location.altitude)
-//            event.putDouble("speed", location.speed.toDouble())
-//            event.putInt("timestamp", location.time.toInt())
-//            emit(id, "onLocation", event)
-//        }
+        map.setOnMyLocationChangeListener { location ->
+            val event = Arguments.createMap()
+            event.putDouble("latitude", location.latitude)
+            event.putDouble("longitude", location.longitude)
+            event.putDouble("accuracy", location.accuracy.toDouble())
+            event.putDouble("altitude", location.altitude)
+            event.putDouble("speed", location.speed.toDouble())
+            event.putInt("timestamp", location.time.toInt())
+            emit(id, "onLocation", event)
+        }
 
         map.setOnMarkerClickListener { marker ->
             emit(markers[marker.id]?.id, "onPress")
