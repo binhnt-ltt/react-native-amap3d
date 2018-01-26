@@ -84,7 +84,11 @@ class AMapView(context: Context) : TextureMapView(context) {
 
             if (SensorManager.getRotationMatrix(rMat, iMat, gData, mData)) {
                 mAzimuth = (Math.toDegrees(SensorManager.getOrientation(rMat, orientation)[0].toDouble()) + 360).toInt() % 360
-                customUserPositionMarker?.marker?.setRotateAngle(-mAzimuth.toFloat())
+                if (_isMapRotate) {
+                    customUserPositionMarker?.marker?.setRotateAngle(0f)
+                } else {
+                    customUserPositionMarker?.marker?.setRotateAngle(-mAzimuth.toFloat())
+                }
             }
         }
 
@@ -125,7 +129,7 @@ class AMapView(context: Context) : TextureMapView(context) {
         }
 
 //        map.setOnMapLongClickListener { latLng ->
-//            val event = Arguments.createMap()
+//            val event =  Arguments.createMap()
 //            event.putDouble("latitude", latLng.latitude)
 //            event.putDouble("longitude", latLng.longitude)
 //            emit(id, "onLongPress", event)
